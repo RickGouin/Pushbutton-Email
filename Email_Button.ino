@@ -20,18 +20,22 @@
 #endif
 
 #include <ESP_Mail_Client.h>
-
+/* Update these values with your WIFI information */
 #define WIFI_SSID "YOUR SSID HERE"
 #define WIFI_PASSWORD "YOUR WIFI PASSWORD HERE"
+/* Update these values with your Email Sending Account information */
 #define SMTP_HOST "YOUR SMTP HOST HERE"
 #define SMTP_PORT 465 //Update to whatever SMTP port you are using
 
 /* The sign in credentials for sender account */
 #define AUTHOR_EMAIL "SENDER EMAIL"
 #define AUTHOR_PASSWORD "SENDER EMAIL PASSWORD"
+
+/* Don't forget to scroll down and edit your message text */
+
 // set pin numbers
 const int checkinPin = 14;     //The number of the pin used for the check-in button
-const int checkoutPin =  12;       //The number of the pin used for the check-out button
+const int checkoutPin =  12;   //The number of the pin used for the check-out button
 
 // variable for storing the pushbutton status
 int inbuttonState = 0;
