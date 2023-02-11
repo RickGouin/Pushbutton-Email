@@ -1,9 +1,9 @@
 /**
  * Send an email at the push of a button
  * Author: Rick Gouin 
- * Full Build Details: www.rickgouin.com
+ * Full Build Details: https://www.rickgouin.com/build-a-device-to-send-emails-at-the-push-of-a-button/
  *
- * Email example from: https://github.com/mobizt/ESP-Mail-Client
+ * Based on Email example from: https://github.com/mobizt/ESP-Mail-Client
  */
 
 #include <Arduino.h>
@@ -12,11 +12,6 @@
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #else
-
-// Other Client defined here
-// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-// See the example Custom_Client.ino for how to use.
-
 #endif
 
 #include <ESP_Mail_Client.h>
@@ -29,9 +24,12 @@
 /* The sign in credentials for sender account */
 #define AUTHOR_EMAIL "SENDER EMAIL"
 #define AUTHOR_PASSWORD "SENDER EMAIL PASSWORD"
+
 // set pin numbers
-const int checkinPin = 14;     //The number of the pin used for the check-in button
-const int checkoutPin =  12;       //The number of the pin used for the check-out button
+const int checkinPin = 14;     	//aka Pin D5 the number of the pushbutton pin
+const int checkoutPin =  12;    //aka Pin D6 the number of the pushbutton pin
+const int greenLED = 4; 		    //aka pin D2 for the success LED
+const int redLED = 5; 		      //aka pin D1 for the error LED
 
 // variable for storing the pushbutton status
 int inbuttonState = 0;
@@ -65,6 +63,9 @@ void setup()
   // initialize the pushbutton pin as an input
   pinMode(checkinPin, INPUT_PULLUP);
   pinMode(checkoutPin, INPUT_PULLUP);
+  //initialize the LEDs as output
+  pinMode(greenLED, OUTPUT);
+  pinMode(redLED, OUTPUT);
 }
 
 void loop()
@@ -98,7 +99,6 @@ void SendEmail(String htmlMsg, String MessageSubject)
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  //session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
   session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
@@ -123,11 +123,24 @@ void SendEmail(String htmlMsg, String MessageSubject)
 
   /* Connect to the server */
   if (!smtp.connect(&session /* session credentials */))
-    Serial.println("Error connectsing to SMTP server, " + smtp.errorReason());
+    Serial.println("Error connecting to SMTP server, " + smtp.errorReason());
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
+  {
     Serial.println("Error sending Email, " + smtp.errorReason());
+    Serial.println("Turning on Red LED");
+    digitalWrite(redLED, HIGH); // turn the LED on
+    delay(10000); // Leave the LED on for 10 seconds
+    digitalWrite(redLED, LOW); // turn the LED off
+  }
+  else
+  {
+    Serial.println("Turning on Green LED");
+    digitalWrite(greenLED, HIGH); // turn the LED on
+    delay(10000); // Leave the LED on for 10 seconds
+    digitalWrite(greenLED, LOW); // turn the LED off
+  }
 }
 
 /* Callback function to get the Email sending status */
@@ -148,18 +161,14 @@ void smtpCallback(SMTP_Status status)
     {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-
-      time_t ts = (time_t)result.timestamp;
-
       ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
       ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-      ESP_MAIL_PRINTF("Date/Time: %s\n", asctime(localtime(&ts)));
       ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
       ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
     }
     Serial.println("----------------\n");
 
-    // You need to clear sending result as the memory usage will get too large.
+    // You need to clear sending result as the memory usage will increase.
     smtp.sendingResult.clear();
   }
 }
